@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Adventure Wheel</title>
+    <style>
+        /* General styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: #1d3557;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin: 0 0 1rem 0;
+            font-size: 2.2rem;
+        }
+
+        .personal-message {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Wheel container */
+        .wheel-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 2rem 0;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%; /* Make it square */
+        }
+
+        .wheel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 0 0 5px #333, 0 0 0 15px #e9c46a;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            transform: rotate(0deg);
+        }
+
+        .wheel-section {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: bottom right;
+            background-color: #457b9d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            transform: rotate(75deg);
+            margin-left: -25%;
+        }
+
+        /* Wheel pointer */
+        .wheel-pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 30px;
+            background-color: #e63946;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 10;
+        }
+
+        /* Spin button */
+        .spin-button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            background-color: #e63946;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 2rem;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .spin-button:hover {
+            background-color: #c1121f;
+            transform: translateY(-2px);
+        }
+
+        .spin-button:active {
+            transform: translateY(0);
+        }
+
+        .spin-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Result section */
+        .result-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            text-align: center;
+            display: none;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .result-title {
+            color: #e63946;
+            margin-top: 0;
+        }
+
+        .result-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        /* History section */
+        .history-container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .history-title {
+            margin-top: 0;
+            color: #457b9d;
+            text-align: center;
+        }
+
+        .history-entry {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background-color: #f1faee;
+            border-radius: 5px;
+            border-left: 4px solid #e63946;
+        }
+
+        .history-date {
+            font-weight: bold;
+            color: #457b9d;
+        }
+
+        footer {
+            background-color: #1d3557;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            margin-top: 2rem;
+        }
+
+        .signature {
+            font-style: italic;
+        }
+        
+        .remaining-text {
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #457b9d;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Ein abenteuerlicher Sommer</h1>
+        <div class="personal-message">
+            <!-- Edit this message for your personal touch -->
+            <p>My dearest Noodle,</p>
+            <p> Ich wünsche dier vo ganzem Herze nur s'Allerbeste zu dim 28. Geburi!! Ich find dich imfall scho zimli cool. Hihi. Und will du mini absoluti favourite person bisch zum Ziit verbringe, schenk ich dier zu dim Geburi sechs verschiedeni dates mit mier, wo du mit em Glücksrad chasch gwünne! Yay! Alli dates sind vo mier organisiert und du chasch selber ussueche, wenn du sie gern würdisch ilöse. Es blibt also nur no öppis zum sägä: Fuck you, Frey! <3 </p>
+        </div>
+    </header>
+
+    <main>
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <div class="wheel-wrapper">
+                <div class="wheel" id="wheel"></div>
+            </div>
+        </div>
+
+        <p class="remaining-text">Verbleibende Abenteuer: <span id="remainingCount">6</span></p>
+
+        <button id="spinButton" class="spin-button">Drehe das Rad!</button>
+
+        <div id="resultContainer" class="result-container">
+            <h2 class="result-title">Unser nächstes Abenteuer:</h2>
+            <h3 id="resultTitle"></h3>
+            <p id="resultDescription" class="result-description"></p>
+        </div>
+
+        <div class="history-container">
+            <h2 class="history-title">Unsere bisherigen Abenteuer</h2>
+            <div id="historyEntries">
+                <p>Noch keine Abenteuer ausgewählt. Drehe das Rad, um zu beginnen!</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Mit Liebe gemacht für dich ♥</p>
+        <p class="signature">Bean</p>
+    </footer>
+
+    <script>
+        // Adventure ideas - customize these!
+        const adventureIdeas = [
+            {
+                title: "Hungrige Wasserratten",
+                description: "You'll see. Hehe."
+            },
+            {
+                title: "Hoch hinaus",
+                description: "Hol dier schomal Blasepflaster"
+            },
+            {
+                title: "Tierisches Begegnung",
+                description: "Yeehaaaaww"
+            },
+            {
+                title: "Nom Nom",
+                description: "Mmmmhhhhhhhh"
+            },
+            {
+                title: "Gurken auf den Augen",
+                description: "Wird entspannt. Oder au nid."
+            },
+            {
+                title: "Rechts vor links",
+                description: "Oder doch in den Sternen?"
+            }
+        ];
+
+        // Colors for wheel sections
+        const colors = [
+            "#e63946", "#457b9d", "#1d3557", 
+            "#a8dadc", "#e9c46a", "#2a9d8f"
+        ];
+
+        // DOM elements
+        const wheel = document.getElementById('wheel');
+        const spinButton = document.getElementById('spinButton');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultDescription = document.getElementById('resultDescription');
+        const historyEntries = document.getElementById('historyEntries');
+        const remainingCount = document.getElementById('remainingCount');
+
+        // Variables
+        let currentRotation = 0;
+        let isSpinning = false;
+        let selectedAdventures = JSON.parse(localStorage.getItem('selectedAdventures')) || [];
+        let availableAdventures = adventureIdeas.filter(adventure => 
+            !selectedAdventures.some(selected => selected.title === adventure.title)
+        );
+
+        // Create wheel sections
+        function createWheel() {
+            wheel.innerHTML = '';
+            const sectionAngle = 360 / 6; // Always 6 sections
+            
+            for (let i = 0; i < 6; i++) {
+                const section = document.createElement('div');
+                section.className = 'wheel-section';
+                section.style.transform = `rotate(${i * sectionAngle}deg)`;
+                section.style.backgroundColor = colors[i];
+                
+                const number = document.createElement('div');
+                number.className = 'section-number';
+                number.textContent = (i + 1);
+                
+                section.appendChild(number);
+                wheel.appendChild(section);
+            }
+        }
+        
+        // Spin the wheel
+        function spinWheel() {
+            if (isSpinning || availableAdventures.length === 0) return;
+            
+            isSpinning = true;
+            resultContainer.style.display = 'none';
+            
+            // Get a random adventure from available ones
+            const randomIndex = Math.floor(Math.random() * availableAdventures.length);
+            const selectedAdventure = availableAdventures[randomIndex];
+            
+            // Calculate section to land on (random section)
+            const sectionIndex = Math.floor(Math.random() * 6);
+            const sectionAngle = 360 / 6;
+            
+            // Calculate rotation (at least 5 full rotations + landing on the section)
+            const targetRotation = 1800 + (sectionIndex * sectionAngle);
+            
+            // Adjust current rotation to avoid short spins
+            currentRotation = currentRotation % 360;
+            const actualRotation = targetRotation + currentRotation;
+            
+            // Apply rotation
+            wheel.style.transform = `rotate(${actualRotation}deg)`;
+            currentRotation = actualRotation;
+            
+            // Show result after animation
+            setTimeout(() => {
+                showResult(selectedAdventure);
+                
+                // Remove from available adventures
+                availableAdventures = availableAdventures.filter(adventure => 
+                    adventure.title !== selectedAdventure.title
+                );
+                
+                // Add to selected adventures with date
+                const now = new Date();
+                selectedAdventures.push({
+                    title: selectedAdventure.title,
+                    description: selectedAdventure.description,
+                    date: now.toISOString()
+                });
+                
+                // Save to local storage
+                localStorage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
+                
+                // Update UI
+                updateHistoryDisplay();
+                updateRemainingCount();
+                
+                isSpinning = false;
+            }, 4000);
+        }
+        
+        // Show the result
+        function showResult(adventure) {
+            resultTitle.textContent = adventure.title;
+            resultDescription.textContent = adventure.description;
+            resultContainer.style.display = 'block';
+        }
+        
+        // Update the history display
+        function updateHistoryDisplay() {
+            if (selectedAdventures.length === 0) {
+                historyEntries.innerHTML = '<p>Noch keine Abenteuer ausgewählt. Drehe das Rad, um zu beginnen!</p>';
+                return;
+            }
+            
+            historyEntries.innerHTML = '';
+            
+            // Sort by date (most recent first)
+            const sortedHistory = [...selectedAdventures].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+            
+            // Create history entries
+            sortedHistory.forEach(entry => {
+                const historyEntry = document.createElement('div');
+                historyEntry.className = 'history-entry';
+                
+                const dateText = document.createElement('p');
+                dateText.className = 'history-date';
+                const entryDate = new Date(entry.date);
+                dateText.textContent = entryDate.toLocaleDateString('de-DE', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                const titleText = document.createElement('h3');
+                titleText.textContent = entry.title;
+                
+                const descriptionText = document.createElement('p');
+                descriptionText.textContent = entry.description;
+                
+                historyEntry.appendChild(dateText);
+                historyEntry.appendChild(titleText);
+                historyEntry.appendChild(descriptionText);
+                
+                historyEntries.appendChild(historyEntry);
+            });
+        }
+        
+        // Update remaining count
+        function updateRemainingCount() {
+            remainingCount.textContent = availableAdventures.length;
+            
+            // Disable spin button if no adventures left
+            if (availableAdventures.length === 0) {
+                spinButton.disabled = true;
+                spinButton.textContent = 'Alle Abenteuer entdeckt!';
+            }
+        }
+        
+        // Initialize
+        function initialize() {
+            createWheel();
+            updateHistoryDisplay();
+            updateRemainingCount();
+            
+            // Set up event listener
+            spinButton.addEventListener('click', spinWheel);
+        }
+        
+        // Reset all data (for testing)
+        function resetData() {
+            localStorage.removeItem('selectedAdventures');
+            selectedAdventures = [];
+            availableAdventures = [...adventureIdeas];
+            updateHistoryDisplay();
+            updateRemainingCount();
+            spinButton.disabled = false;
+            spinButton.textContent = 'Drehe das Rad!';
+            resultContainer.style.display = 'none';
+        }
+        
+        // Call window.resetData() in the browser console to reset everything
+        window.resetData = resetData;
+        
+        // Start everything
+        window.onload = initialize;
+    </script>
+</body>
+</html>
