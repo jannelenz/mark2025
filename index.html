@@ -264,7 +264,7 @@
     </main>
 
     <footer>
-        <p>Mit Liebe gemacht für Noodle ♥</p>
+        <p>Mit Liebe gemacht für dich ♥</p>
         <p class="signature">Bean</p>
     </footer>
 
@@ -285,11 +285,11 @@
             },
             {
                 title: "Nom Nom",
-                description: "Kulinarische Höhenflüge"
+                description: "Mmmmhhhhhhhh"
             },
             {
                 title: "Gurken auf den Augen",
-                description: "Wird entspannt. Oder au nid. Hehe."
+                description: "Wird entspannt. Oder au nid."
             },
             {
                 title: "Rechts vor links",
@@ -313,7 +313,6 @@
         const remainingCount = document.getElementById('remainingCount');
 
         // Variables - use in-memory storage instead of localStorage
-        let currentRotation = 0;
         let isSpinning = false;
         let selectedAdventures = [];
         let availableAdventures = [...adventureIdeas];
@@ -378,17 +377,22 @@
             const sectionIndex = Math.floor(Math.random() * 6);
             const sectionAngle = 360 / 6;
             
-            // Calculate rotation - ensure it stops in the middle of a section
-            // The + (sectionAngle / 2) ensures it stops in the middle of a section
-            const targetRotation = 1800 + (sectionIndex * sectionAngle) + (sectionAngle / 2);
+            // Calculate rotation - always with a fixed number of full rotations (5)
+            // Plus half a section to ensure it stops in the middle of a section
+            const spinRotations = 5 * 360; // 5 full rotations
+            const finalPosition = (sectionIndex * sectionAngle) + (sectionAngle / 2);
+            const rotation = spinRotations + finalPosition;
             
-            // Adjust current rotation to avoid short spins
-            currentRotation = currentRotation % 360;
-            const actualRotation = targetRotation + currentRotation;
+            // Reset the transition
+            wheel.style.transition = 'none';
+            wheel.style.transform = 'rotate(0deg)';
             
-            // Apply rotation
-            wheel.style.transform = `rotate(${actualRotation}deg)`;
-            currentRotation = actualRotation;
+            // Force a reflow to ensure the transition reset is applied
+            void wheel.offsetWidth;
+            
+            // Apply the consistent transition and rotation
+            wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
+            wheel.style.transform = `rotate(${rotation}deg)`;
             
             // Show result after animation
             setTimeout(() => {
