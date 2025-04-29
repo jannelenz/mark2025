@@ -264,43 +264,49 @@
     </main>
 
     <footer>
-        <p>Mit Liebe gemacht für Bean ♥</p>
-        <p class="signature">Noodle</p>
+        <p>Mit Liebe gemacht für dich ♥</p>
+        <p class="signature">Bean</p>
     </footer>
 
     <script>
-        // Adventure ideas - customize these!
-        const adventureIdeas = [
+        // All possible adventures with their colors
+        const allAdventures = [
             {
+                id: "adventure1",
                 title: "Hungrige Wasserratten",
-                description: "You'll see. Hehe."
+                description: "You'll see. Hehe.",
+                color: "#e63946"
             },
             {
+                id: "adventure2",
                 title: "Hoch hinaus",
-                description: "Hol dier schomal Blasepflaster"
+                description: "Hol dier schomal Blasepflaster",
+                color: "#457b9d"
             },
             {
+                id: "adventure3",
                 title: "Tierisches Begegnung",
-                description: "Yeehaaaaww"
+                description: "Yeehaaaaww",
+                color: "#1d3557"
             },
             {
+                id: "adventure4",
                 title: "Nom Nom",
-                description: "Kulinarische Höhenflüge"
+                description: "Mmmmhhhhhhhh",
+                color: "#a8dadc"
             },
             {
+                id: "adventure5",
                 title: "Gurken auf den Augen",
-                description: "Wird entspannt. Oder au nid."
+                description: "Wird entspannt. Oder au nid.",
+                color: "#e9c46a"
             },
             {
+                id: "adventure6",
                 title: "Rechts vor links",
-                description: "Oder doch in den Sternen?"
+                description: "Oder doch in den Sternen?",
+                color: "#2a9d8f"
             }
-        ];
-
-        // Colors for wheel sections
-        const colors = [
-            "#e63946", "#457b9d", "#1d3557", 
-            "#a8dadc", "#e9c46a", "#2a9d8f"
         ];
 
         // DOM elements
@@ -312,19 +318,19 @@
         const historyEntries = document.getElementById('historyEntries');
         const remainingCount = document.getElementById('remainingCount');
 
-        // Variables - use in-memory storage instead of localStorage
+        // Variables
         let isSpinning = false;
-        let selectedAdventures = [];
-        let availableAdventures = [...adventureIdeas];
+        let selectedAdventures = []; // Adventures that have been selected and saved
+        let availableAdventures = [...allAdventures]; // Adventures that can be selected
+        let currentSelection = null; // The most recently selected adventure that hasn't been saved yet
 
         // Storage functions (fallback for when localStorage is not available)
         const storage = {
-            // Try to use localStorage if available, otherwise use memory variables
             getItem: function(key) {
                 try {
                     return localStorage.getItem(key);
                 } catch (e) {
-                    return null; // Initial load always returns null for in-memory
+                    return null;
                 }
             },
             setItem: function(key, value) {
@@ -332,7 +338,6 @@
                     localStorage.setItem(key, value);
                 } catch (e) {
                     console.log('Using in-memory storage instead of localStorage');
-                    // No need to do anything for in-memory storage
                 }
             },
             removeItem: function(key) {
@@ -344,17 +349,31 @@
             }
         };
 
-        // Create wheel with conic gradient for colors
+        // Create wheel with all available adventures
         function createWheel() {
-            // Create conic gradient for the wheel
-            const sectionAngle = 360 / 6; // 60 degrees per section
+            // Use all adventures that are available or the current selection
+            const displayedAdventures = currentSelection 
+                ? [...availableAdventures, currentSelection] 
+                : availableAdventures;
+            
+            if (displayedAdventures.length === 0) {
+                // If no adventures available, show empty wheel
+                wheel.style.background = "#cccccc";
+                return;
+            }
+            
+            // Calculate angle for each available adventure
+            const sectionAngle = 360 / displayedAdventures.length;
             let gradientString = "conic-gradient(";
             
-            for (let i = 0; i < 6; i++) {
+            // Build gradient string with all displayed adventures
+            for (let i = 0; i < displayedAdventures.length; i++) {
                 const startAngle = i * sectionAngle;
                 const endAngle = (i + 1) * sectionAngle;
-                gradientString += `${colors[i]} ${startAngle}deg ${endAngle}deg`;
-                if (i < 5) gradientString += ", ";
+                const color = displayedAdventures[i].color;
+                
+                gradientString += `${color} ${startAngle}deg ${endAngle}deg`;
+                if (i < displayedAdventures.length - 1) gradientString += ", ";
             }
             gradientString += ")";
             
@@ -362,23 +381,41 @@
             wheel.style.background = gradientString;
         }
         
-        // Spin the wheel
+        // Spin the wheel to a random available adventure
         function spinWheel() {
             if (isSpinning || availableAdventures.length === 0) return;
             
             isSpinning = true;
             resultContainer.style.display = 'none';
             
+            // If there's a current selection, remove it from the wheel before spinning
+            if (currentSelection) {
+                finalizeSelection();
+            }
+            
             // Get a random adventure from available ones
             const randomIndex = Math.floor(Math.random() * availableAdventures.length);
             const selectedAdventure = availableAdventures[randomIndex];
             
-            // Calculate section to land on (random section)
-            const sectionIndex = Math.floor(Math.random() * 6);
-            const sectionAngle = 360 / 6;
+            // Remember this as the current selection
+            currentSelection = selectedAdventure;
             
-            // Calculate rotation - always with a fixed number of full rotations (5)
-            // Plus half a section to ensure it stops in the middle of a section
+            // Remove from available adventures
+            availableAdventures = availableAdventures.filter(adventure => 
+                adventure.id !== selectedAdventure.id
+            );
+            
+            // Redraw the wheel with both available adventures and current selection
+            createWheel();
+            
+            // Calculate rotation to land on the selected adventure
+            // With the way our wheel is drawn, we need to find the correct section
+            const displayedAdventures = [...availableAdventures, currentSelection];
+            const sectionIndex = displayedAdventures.findIndex(adv => adv.id === currentSelection.id);
+            const sectionAngle = 360 / displayedAdventures.length;
+            
+            // Calculate rotation - always with 5 full rotations
+            // Plus position to land in the middle of the selected section
             const spinRotations = 5 * 360; // 5 full rotations
             const finalPosition = (sectionIndex * sectionAngle) + (sectionAngle / 2);
             const rotation = spinRotations + finalPosition;
@@ -387,40 +424,43 @@
             wheel.style.transition = 'none';
             wheel.style.transform = 'rotate(0deg)';
             
-            // Force a reflow to ensure the transition reset is applied
+            // Force a reflow
             void wheel.offsetWidth;
             
-            // Apply the consistent transition and rotation
+            // Apply rotation with transition
             wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
             wheel.style.transform = `rotate(${rotation}deg)`;
             
             // Show result after animation
             setTimeout(() => {
                 showResult(selectedAdventure);
-                
-                // Remove from available adventures
-                availableAdventures = availableAdventures.filter(adventure => 
-                    adventure.title !== selectedAdventure.title
-                );
-                
-                // Add to selected adventures with date
-                const now = new Date();
-                selectedAdventures.push({
-                    title: selectedAdventure.title,
-                    description: selectedAdventure.description,
-                    date: now.toISOString(),
-                    id: Date.now().toString() // Add unique ID for deletion
-                });
-                
-                // Try to save to storage
-                storage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
-                
-                // Update UI
-                updateHistoryDisplay();
-                updateRemainingCount();
-                
                 isSpinning = false;
+                
+                // Update remaining count display
+                updateRemainingCount();
             }, 4000);
+        }
+        
+        // Finalize the current selection and add it to history
+        function finalizeSelection() {
+            if (!currentSelection) return;
+            
+            // Add to selected adventures with date
+            const now = new Date();
+            selectedAdventures.push({
+                ...currentSelection,
+                date: now.toISOString(),
+                selectionId: Date.now().toString() // Unique ID for this selection
+            });
+            
+            // Clear current selection
+            currentSelection = null;
+            
+            // Save to storage
+            saveData();
+            
+            // Update UI
+            updateHistoryDisplay();
         }
         
         // Show the result
@@ -431,32 +471,48 @@
         }
         
         // Delete a history entry
-        function deleteHistoryEntry(id) {
-            // Find the adventure by ID
-            const adventure = selectedAdventures.find(entry => entry.id === id);
+        function deleteHistoryEntry(selectionId) {
+            // Find the adventure by selection ID
+            const adventureEntry = selectedAdventures.find(entry => entry.selectionId === selectionId);
             
-            if (!adventure) return;
+            if (!adventureEntry) return;
             
             // Remove from selected adventures
-            selectedAdventures = selectedAdventures.filter(entry => entry.id !== id);
+            selectedAdventures = selectedAdventures.filter(entry => entry.selectionId !== selectionId);
             
-            // Add back to available adventures if it's one of the original adventures
-            const originalAdventure = adventureIdeas.find(idea => idea.title === adventure.title);
-            if (originalAdventure && !availableAdventures.some(adv => adv.title === originalAdventure.title)) {
-                availableAdventures.push(originalAdventure);
+            // Add back to available adventures if it's not already there
+            if (!availableAdventures.some(adv => adv.id === adventureEntry.id) && 
+                (!currentSelection || currentSelection.id !== adventureEntry.id)) {
+                // Find the original adventure data to add back
+                const originalAdventure = allAdventures.find(adv => adv.id === adventureEntry.id);
+                if (originalAdventure) {
+                    availableAdventures.push(originalAdventure);
+                }
             }
             
-            // Try to save to storage
-            storage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
+            // Save data
+            saveData();
             
             // Update UI
+            createWheel();
             updateHistoryDisplay();
             updateRemainingCount();
             
             // Enable spin button if it was disabled
-            if (spinButton.disabled && availableAdventures.length > 0) {
+            if (spinButton.disabled && (availableAdventures.length > 0 || !currentSelection)) {
                 spinButton.disabled = false;
                 spinButton.textContent = 'Drehe das Rad!';
+            }
+        }
+        
+        // Save data to storage
+        function saveData() {
+            try {
+                storage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
+                storage.setItem('availableAdventures', JSON.stringify(availableAdventures));
+                storage.setItem('currentSelection', currentSelection ? JSON.stringify(currentSelection) : null);
+            } catch (e) {
+                console.log('Error saving data:', e);
             }
         }
         
@@ -479,6 +535,9 @@
                 const historyEntry = document.createElement('div');
                 historyEntry.className = 'history-entry';
                 
+                // Use the adventure's color for the border
+                historyEntry.style.borderLeftColor = entry.color;
+                
                 const dateText = document.createElement('p');
                 dateText.className = 'history-date';
                 const entryDate = new Date(entry.date);
@@ -499,7 +558,7 @@
                 deleteButton.className = 'delete-button';
                 deleteButton.textContent = '×';
                 deleteButton.title = 'Löschen';
-                deleteButton.addEventListener('click', () => deleteHistoryEntry(entry.id));
+                deleteButton.addEventListener('click', () => deleteHistoryEntry(entry.selectionId));
                 
                 historyEntry.appendChild(dateText);
                 historyEntry.appendChild(titleText);
@@ -514,7 +573,7 @@
         function updateRemainingCount() {
             remainingCount.textContent = availableAdventures.length;
             
-            // Disable spin button if no adventures left
+            // Disable spin button if no adventures left or if we already have a current selection
             if (availableAdventures.length === 0) {
                 spinButton.disabled = true;
                 spinButton.textContent = 'Alle Abenteuer entdeckt!';
@@ -526,35 +585,45 @@
         
         // Initialize
         function initialize() {
-            createWheel();
-            
-            // Try to load saved data, with fallback for no localStorage
+            // Try to load saved data
             try {
-                const savedData = storage.getItem('selectedAdventures');
-                if (savedData) {
-                    selectedAdventures = JSON.parse(savedData);
-                    
-                    // Add IDs to existing adventures if they don't have one
-                    selectedAdventures = selectedAdventures.map(adventure => {
-                        if (!adventure.id) {
-                            adventure.id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-                        }
-                        return adventure;
-                    });
-                    
-                    // Update available adventures
-                    availableAdventures = adventureIdeas.filter(adventure => 
-                        !selectedAdventures.some(selected => selected.title === adventure.title)
-                    );
+                const savedSelected = storage.getItem('selectedAdventures');
+                const savedAvailable = storage.getItem('availableAdventures');
+                const savedCurrent = storage.getItem('currentSelection');
+                
+                if (savedSelected) {
+                    selectedAdventures = JSON.parse(savedSelected);
+                }
+                
+                if (savedCurrent && savedCurrent !== "null") {
+                    currentSelection = JSON.parse(savedCurrent);
+                }
+                
+                if (savedAvailable) {
+                    availableAdventures = JSON.parse(savedAvailable);
+                } else {
+                    // Recreate available adventures if needed
+                    const usedIds = [
+                        ...selectedAdventures.map(adv => adv.id),
+                        ...(currentSelection ? [currentSelection.id] : [])
+                    ];
+                    availableAdventures = allAdventures.filter(adv => !usedIds.includes(adv.id));
                 }
             } catch (e) {
-                console.log('Could not load saved data, starting fresh');
+                console.log('Could not load saved data, starting fresh:', e);
                 selectedAdventures = [];
-                availableAdventures = [...adventureIdeas];
+                currentSelection = null;
+                availableAdventures = [...allAdventures];
             }
             
+            createWheel();
             updateHistoryDisplay();
             updateRemainingCount();
+            
+            // If there's a current selection, show it in the result container
+            if (currentSelection) {
+                showResult(currentSelection);
+            }
             
             // Set up event listener
             spinButton.addEventListener('click', spinWheel);
@@ -563,10 +632,17 @@
         // Reset all data (for testing)
         function resetData() {
             storage.removeItem('selectedAdventures');
+            storage.removeItem('availableAdventures');
+            storage.removeItem('currentSelection');
+            
             selectedAdventures = [];
-            availableAdventures = [...adventureIdeas];
+            currentSelection = null;
+            availableAdventures = [...allAdventures];
+            
+            createWheel();
             updateHistoryDisplay();
             updateRemainingCount();
+            
             spinButton.disabled = false;
             spinButton.textContent = 'Drehe das Rad!';
             resultContainer.style.display = 'none';
