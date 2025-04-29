@@ -71,32 +71,13 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: white;
             box-shadow: 0 0 0 5px #333, 0 0 0 15px #e9c46a;
             overflow: hidden;
             transition: transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
             transform: rotate(0deg);
+            /* The background will be set via JavaScript */
         }
-
-        .wheel-section {
-            position: absolute;
-            width: 50%;
-            height: 50%;
-            transform-origin: bottom right;
-            background-color: #457b9d;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .section-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-            transform: rotate(75deg);
-            margin-left: -25%;
-        }
-
+        
         /* Wheel pointer */
         .wheel-pointer {
             position: absolute;
@@ -186,11 +167,34 @@
             background-color: #f1faee;
             border-radius: 5px;
             border-left: 4px solid #e63946;
+            position: relative;
         }
 
         .history-date {
             font-weight: bold;
             color: #457b9d;
+        }
+
+        .delete-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #e63946;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+
+        .delete-button:hover {
+            background-color: #c1121f;
         }
 
         footer {
@@ -209,6 +213,15 @@
             margin-top: 1rem;
             font-weight: bold;
             color: #457b9d;
+        }
+        
+        /* Data persistence notice */
+        .persistence-notice {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            font-style: italic;
         }
     </style>
 </head>
@@ -246,6 +259,8 @@
                 <p>Noch keine Abenteuer ausgewählt. Drehe das Rad, um zu beginnen!</p>
             </div>
         </div>
+        
+        <p class="persistence-notice">Hinweis: Die Auswahl wird nur für diese Sitzung gespeichert.</p>
     </main>
 
     <footer>
@@ -297,32 +312,55 @@
         const historyEntries = document.getElementById('historyEntries');
         const remainingCount = document.getElementById('remainingCount');
 
-        // Variables
+        // Variables - use in-memory storage instead of localStorage
         let currentRotation = 0;
         let isSpinning = false;
-        let selectedAdventures = JSON.parse(localStorage.getItem('selectedAdventures')) || [];
-        let availableAdventures = adventureIdeas.filter(adventure => 
-            !selectedAdventures.some(selected => selected.title === adventure.title)
-        );
+        let selectedAdventures = [];
+        let availableAdventures = [...adventureIdeas];
 
-        // Create wheel sections
+        // Storage functions (fallback for when localStorage is not available)
+        const storage = {
+            // Try to use localStorage if available, otherwise use memory variables
+            getItem: function(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (e) {
+                    return null; // Initial load always returns null for in-memory
+                }
+            },
+            setItem: function(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (e) {
+                    console.log('Using in-memory storage instead of localStorage');
+                    // No need to do anything for in-memory storage
+                }
+            },
+            removeItem: function(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    // For in-memory, we'll handle this in resetData
+                }
+            }
+        };
+
+        // Create wheel with conic gradient for colors
         function createWheel() {
-            wheel.innerHTML = '';
-            const sectionAngle = 360 / 6; // Always 6 sections
+            // Create conic gradient for the wheel
+            const sectionAngle = 360 / 6; // 60 degrees per section
+            let gradientString = "conic-gradient(";
             
             for (let i = 0; i < 6; i++) {
-                const section = document.createElement('div');
-                section.className = 'wheel-section';
-                section.style.transform = `rotate(${i * sectionAngle}deg)`;
-                section.style.backgroundColor = colors[i];
-                
-                const number = document.createElement('div');
-                number.className = 'section-number';
-                number.textContent = (i + 1);
-                
-                section.appendChild(number);
-                wheel.appendChild(section);
+                const startAngle = i * sectionAngle;
+                const endAngle = (i + 1) * sectionAngle;
+                gradientString += `${colors[i]} ${startAngle}deg ${endAngle}deg`;
+                if (i < 5) gradientString += ", ";
             }
+            gradientString += ")";
+            
+            // Apply the gradient to the wheel
+            wheel.style.background = gradientString;
         }
         
         // Spin the wheel
@@ -340,8 +378,9 @@
             const sectionIndex = Math.floor(Math.random() * 6);
             const sectionAngle = 360 / 6;
             
-            // Calculate rotation (at least 5 full rotations + landing on the section)
-            const targetRotation = 1800 + (sectionIndex * sectionAngle);
+            // Calculate rotation - ensure it stops in the middle of a section
+            // The + (sectionAngle / 2) ensures it stops in the middle of a section
+            const targetRotation = 1800 + (sectionIndex * sectionAngle) + (sectionAngle / 2);
             
             // Adjust current rotation to avoid short spins
             currentRotation = currentRotation % 360;
@@ -365,11 +404,12 @@
                 selectedAdventures.push({
                     title: selectedAdventure.title,
                     description: selectedAdventure.description,
-                    date: now.toISOString()
+                    date: now.toISOString(),
+                    id: Date.now().toString() // Add unique ID for deletion
                 });
                 
-                // Save to local storage
-                localStorage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
+                // Try to save to storage
+                storage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
                 
                 // Update UI
                 updateHistoryDisplay();
@@ -384,6 +424,36 @@
             resultTitle.textContent = adventure.title;
             resultDescription.textContent = adventure.description;
             resultContainer.style.display = 'block';
+        }
+        
+        // Delete a history entry
+        function deleteHistoryEntry(id) {
+            // Find the adventure by ID
+            const adventure = selectedAdventures.find(entry => entry.id === id);
+            
+            if (!adventure) return;
+            
+            // Remove from selected adventures
+            selectedAdventures = selectedAdventures.filter(entry => entry.id !== id);
+            
+            // Add back to available adventures if it's one of the original adventures
+            const originalAdventure = adventureIdeas.find(idea => idea.title === adventure.title);
+            if (originalAdventure && !availableAdventures.some(adv => adv.title === originalAdventure.title)) {
+                availableAdventures.push(originalAdventure);
+            }
+            
+            // Try to save to storage
+            storage.setItem('selectedAdventures', JSON.stringify(selectedAdventures));
+            
+            // Update UI
+            updateHistoryDisplay();
+            updateRemainingCount();
+            
+            // Enable spin button if it was disabled
+            if (spinButton.disabled && availableAdventures.length > 0) {
+                spinButton.disabled = false;
+                spinButton.textContent = 'Drehe das Rad!';
+            }
         }
         
         // Update the history display
@@ -420,9 +490,17 @@
                 const descriptionText = document.createElement('p');
                 descriptionText.textContent = entry.description;
                 
+                // Create delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-button';
+                deleteButton.textContent = '×';
+                deleteButton.title = 'Löschen';
+                deleteButton.addEventListener('click', () => deleteHistoryEntry(entry.id));
+                
                 historyEntry.appendChild(dateText);
                 historyEntry.appendChild(titleText);
                 historyEntry.appendChild(descriptionText);
+                historyEntry.appendChild(deleteButton);
                 
                 historyEntries.appendChild(historyEntry);
             });
@@ -436,12 +514,41 @@
             if (availableAdventures.length === 0) {
                 spinButton.disabled = true;
                 spinButton.textContent = 'Alle Abenteuer entdeckt!';
+            } else {
+                spinButton.disabled = false;
+                spinButton.textContent = 'Drehe das Rad!';
             }
         }
         
         // Initialize
         function initialize() {
             createWheel();
+            
+            // Try to load saved data, with fallback for no localStorage
+            try {
+                const savedData = storage.getItem('selectedAdventures');
+                if (savedData) {
+                    selectedAdventures = JSON.parse(savedData);
+                    
+                    // Add IDs to existing adventures if they don't have one
+                    selectedAdventures = selectedAdventures.map(adventure => {
+                        if (!adventure.id) {
+                            adventure.id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+                        }
+                        return adventure;
+                    });
+                    
+                    // Update available adventures
+                    availableAdventures = adventureIdeas.filter(adventure => 
+                        !selectedAdventures.some(selected => selected.title === adventure.title)
+                    );
+                }
+            } catch (e) {
+                console.log('Could not load saved data, starting fresh');
+                selectedAdventures = [];
+                availableAdventures = [...adventureIdeas];
+            }
+            
             updateHistoryDisplay();
             updateRemainingCount();
             
@@ -451,7 +558,7 @@
         
         // Reset all data (for testing)
         function resetData() {
-            localStorage.removeItem('selectedAdventures');
+            storage.removeItem('selectedAdventures');
             selectedAdventures = [];
             availableAdventures = [...adventureIdeas];
             updateHistoryDisplay();
@@ -463,6 +570,11 @@
         
         // Call window.resetData() in the browser console to reset everything
         window.resetData = resetData;
+        
+        // Add window resize handler to redraw the wheel
+        window.addEventListener('resize', () => {
+            createWheel();
+        });
         
         // Start everything
         window.onload = initialize;
